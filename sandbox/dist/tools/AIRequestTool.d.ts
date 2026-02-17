@@ -51,12 +51,13 @@ export interface ChatCompletionResponse {
     };
 }
 /**
- * AIRequestTool - Manages requests to external AI APIs
+ * AIRequestTool - Manages requests to external AI APIs with advanced features
  */
 export declare class AIRequestTool implements Tool {
     name: string;
     description: string;
     private requestClients;
+    private streamChunks;
     constructor();
     /**
      * Initialize request clients for all available models
@@ -74,9 +75,26 @@ export declare class AIRequestTool implements Tool {
         top_p?: number;
         max_tokens?: number;
         stream?: boolean;
+        onChunk?: (chunk: any) => void;
     }): Promise<{
         success: boolean;
         data?: any;
+        error?: string;
+    }>;
+    /**
+     * Stream chat completion with callback support
+     */
+    streamChat(params: {
+        modelId: string;
+        messages: ChatMessage[];
+        temperature?: number;
+        top_p?: number;
+        max_tokens?: number;
+        streamId?: string;
+    }): Promise<{
+        success: boolean;
+        streamId: string;
+        message?: string;
         error?: string;
     }>;
     /**
@@ -98,6 +116,13 @@ export declare class AIRequestTool implements Tool {
      * Set or update an API key for authentication
      */
     setApiKey(apiKey: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    /**
+     * Abort an ongoing stream
+     */
+    abortStream(streamId: string): Promise<{
         success: boolean;
         message: string;
     }>;

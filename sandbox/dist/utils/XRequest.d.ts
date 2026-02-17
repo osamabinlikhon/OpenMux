@@ -27,7 +27,7 @@ export interface XRequestCallbacks<Output = Record<string, string>> {
  * Middleware handlers for request/response processing
  */
 export interface XFetchMiddlewares {
-    onRequest?: (...args: Parameters<typeof fetch>) => Promise<Parameters<typeof fetch>>;
+    onRequest?: (url: string | URL | Request, init?: RequestInit) => Promise<[string | URL | Request, RequestInit | undefined]>;
     onResponse?: (response: Response) => Promise<Response>;
 }
 /**

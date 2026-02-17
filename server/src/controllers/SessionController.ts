@@ -1,6 +1,10 @@
 import { Router, Request, Response } from "express";
 import { sessionService } from "../services/SessionService";
-import { createAIFromEnv, isAIConfigured } from "../services/AIFactory";
+import {
+  createAIFromEnv,
+  isAIConfigured,
+  getAIConfig,
+} from "../services/AIFactory";
 import { AIMessage } from "../services/AIService";
 
 const aiService = createAIFromEnv();
@@ -157,6 +161,29 @@ export const createSessionRouter = () => {
       console.error("Error terminating session:", error);
       res.status(500).json({ error: "Failed to terminate session" });
     }
+  });
+
+  /**
+   * GET /ai/config
+   * Check AI service configuration
+   */
+  router.get("/ai/config", (req: Request, res: Response) => {
+    const configured = isAIConfigured();
+    const config = getAIConfig();
+
+    res.json({
+      configured,
+      provider: configured ? config.provider : null,
+      model: configured ? config.defaultModel : null,
+      availableProviders: [
+        "minimax",
+        "glm",
+        "kimi",
+        "openai",
+        "anthropic",
+        "opencode",
+      ],
+    });
   });
 
   return router;

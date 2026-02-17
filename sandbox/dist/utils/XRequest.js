@@ -78,14 +78,17 @@ export class XRequestClass extends EventEmitter {
         this.abortController = new AbortController();
         try {
             // Execute pre-request middleware
-            let requestArgs = [this.baseURL + endpoint];
+            let requestUrl = this.baseURL + endpoint;
+            let requestInit = {
+                method: mergedOptions.method || 'POST',
+                headers: mergedOptions.headers,
+                body: data ? JSON.stringify(mergedOptions.transformRequest ? mergedOptions.transformRequest(data) : data) : undefined,
+                signal: this.abortController.signal,
+            };
             if (mergedOptions.middlewares?.onRequest) {
-                [requestArgs] = await mergedOptions.middlewares.onRequest(this.baseURL + endpoint, {
-                    method: mergedOptions.method || 'POST',
-                    headers: mergedOptions.headers,
-                    body: data ? JSON.stringify(mergedOptions.transformRequest ? mergedOptions.transformRequest(data) : data) : undefined,
-                    signal: this.abortController.signal,
-                });
+                const [updatedUrl, updatedInit] = await mergedOptions.middlewares.onRequest(requestUrl, requestInit);
+                requestUrl = String(updatedUrl);
+                requestInit = updatedInit;
             }
             // Use custom fetch or default
             const fetchFn = mergedOptions.fetch || fetch;

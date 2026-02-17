@@ -86,7 +86,7 @@ export class XRequestClass<Input = Record<PropertyKey, any>, Output = Record<str
     super();
     this.baseURL = baseURL;
     this.options = {
-      method: 'POST',
+      method: 'POST' as const,
       timeout: 30000,
       streamTimeout: 60000,
       retries: 3,
@@ -98,7 +98,7 @@ export class XRequestClass<Input = Record<PropertyKey, any>, Output = Record<str
       manual: false,
       ...globalOptions,
       ...options,
-    };
+    } as XRequestOptions<Input, Output>;
 
     this.client = this._createClient();
 
@@ -160,7 +160,7 @@ export class XRequestClass<Input = Record<PropertyKey, any>, Output = Record<str
     customOptions?: Partial<XRequestOptions<Input, Output>>,
     retryAttempt = 0
   ): Promise<Output | void> {
-    const mergedOptions = { ...this.options, ...customOptions };
+    const mergedOptions = { ...this.options, ...customOptions } as XRequestOptions<Input, Output>;
     const maxRetries = mergedOptions.retryTimes || mergedOptions.retries || 3;
 
     this.isRequesting = true;
@@ -168,17 +168,18 @@ export class XRequestClass<Input = Record<PropertyKey, any>, Output = Record<str
 
     try {
       // Execute pre-request middleware
-      let requestArgs: any[] = [this.baseURL + endpoint];
+      let requestUrl = this.baseURL + endpoint;
+      let requestInit: RequestInit | undefined = {
+        method: mergedOptions.method || 'POST',
+        headers: mergedOptions.headers,
+        body: data ? JSON.stringify(mergedOptions.transformRequest ? mergedOptions.transformRequest(data) : data) : undefined,
+        signal: this.abortController.signal,
+      };
+
       if (mergedOptions.middlewares?.onRequest) {
-        [requestArgs] = await mergedOptions.middlewares.onRequest(
-          this.baseURL + endpoint,
-          {
-            method: mergedOptions.method || 'POST',
-            headers: mergedOptions.headers,
-            body: data ? JSON.stringify(mergedOptions.transformRequest ? mergedOptions.transformRequest(data) : data) : undefined,
-            signal: this.abortController.signal,
-          }
-        );
+        const [updatedUrl, updatedInit] = await mergedOptions.middlewares.onRequest(requestUrl, requestInit);
+        requestUrl = String(updatedUrl);
+        requestInit = updatedInit;
       }
 
       // Use custom fetch or default
@@ -397,7 +398,7 @@ export class XRequestClass<Input = Record<PropertyKey, any>, Output = Record<str
 /**
  * Global options storage for all XRequest instances
  */
-let globalOptions: XRequestGlobalOptions = {};
+let globalOptions: any = {};
 
 /**
  * Set global options for all XRequest instances

@@ -10,7 +10,7 @@ export interface AIConfig {
   baseUrl?: string;
 }
 
-const DEFAULT_PROVIDER = (process.env.AI_PROVIDER as AIProvider) || "minimax";
+const DEFAULT_PROVIDER = (process.env.AI_PROVIDER as AIProvider) || "opencode";
 const DEFAULT_API_KEY = process.env.AI_API_KEY || "";
 const DEFAULT_MODEL = process.env.AI_DEFAULT_MODEL;
 const DEFAULT_BASE_URL = process.env.AI_BASE_URL;
@@ -55,7 +55,7 @@ export function isAIConfigured(): boolean {
 }
 
 export function getAvailableProviders(): AIProvider[] {
-  return ["minimax", "glm", "kimi", "openai", "anthropic"];
+  return ["minimax", "glm", "kimi", "openai", "anthropic", "opencode"];
 }
 
 export { AIService, AIProvider };
