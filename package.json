@@ -1,0 +1,41 @@
+{
+  "name": "@openmux/monorepo",
+  "version": "1.0.0",
+  "description": "OpenMux - The AI that actually does things. A general-purpose AI Agent system with sandbox environment support for computer use.",
+  "private": true,
+  "workspaces": [
+    "web",
+    "server",
+    "sandbox"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspaces --if-present",
+    "dev:web": "npm run dev -w web",
+    "dev:server": "npm run dev -w server",
+    "dev:sandbox": "npm run dev -w sandbox",
+    "build:web": "npm run build -w web",
+    "build:server": "npm run build -w server",
+    "build:sandbox": "npm run build -w sandbox",
+    "docker": "docker-compose -f docker-compose.yml up",
+    "docker:build": "docker-compose -f docker-compose.yml build",
+    "docker:down": "docker-compose -f docker-compose.yml down",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "sandbox",
+    "docker",
+    "automation",
+    "computer-use"
+  ]
+}

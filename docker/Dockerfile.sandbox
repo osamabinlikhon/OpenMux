@@ -1,0 +1,50 @@
+FROM ubuntu:24.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    vim \
+    nano \
+    build-essential \
+    python3 \
+    python3-pip \
+    nodejs \
+    npm \
+    x11-apps \
+    xvfb \
+    x11vnc \
+    dbus \
+    sudo \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js dependencies
+RUN npm install -g npm@latest
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY sandbox/package*.json ./
+COPY sandbox/tsconfig.json ./
+
+# Install Node dependencies
+RUN npm install
+
+# Copy source code
+COPY sandbox/src ./src
+
+# Build TypeScript
+RUN npm run build
+
+# Expose ports
+EXPOSE 8080 5900 9222
+
+# Set up VNC
+RUN mkdir -p /root/.vnc
+ENV DISPLAY=:99
+
+# Start services
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1920x1080x24 & x11vnc -display :99 -forever -nopw & npm start"]
