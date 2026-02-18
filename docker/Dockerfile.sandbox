@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js dependencies
-RUN npm install -g npm@latest
+# NOTE: skipping global npm upgrade to avoid engine/version conflicts in the base Ubuntu image
 
 # Create app directory
 WORKDIR /app

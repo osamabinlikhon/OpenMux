@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './VNCViewer.css';
 
 interface VNCViewerProps {
@@ -7,14 +7,70 @@ interface VNCViewerProps {
 
 export default function VNCViewer({ sessionId }: VNCViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [connected, setConnected] = useState(false);
+  const pollRef = useRef<number | null>(null);
+
+  async function fetchScreenshot(): Promise<string | null> {
+    if (!sessionId) return null;
+    try {
+      // Prefer Electron IPC if available
+      const openmux = (window as any).openmux;
+      if (openmux && openmux.sandboxRequest) {
+        const res = await openmux.sandboxRequest({ path: `/e2b/sessions/${sessionId}/screenshot` });
+        if (res?.isImage && res.data) return `data:${res.contentType || 'image/png'};base64,${res.data}`;
+        if (res?.json && res.json.data) return `data:image/png;base64,${res.json.data}`;
+        return null;
+      }
+
+      // Fallback to direct HTTP
+      const resp = await fetch(`/e2b/sessions/${sessionId}/screenshot`);
+      if (!resp.ok) return null;
+      const blob = await resp.blob();
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.error('screenshot error', e);
+      return null;
+    }
+  }
+
+  async function drawScreenshot() {
+    const url = await fetchScreenshot();
+    if (!url) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      setConnected(true);
+    };
+    img.onerror = () => {
+      // ignore
+    };
+    img.src = url;
+  }
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      setConnected(false);
+      if (pollRef.current) window.clearInterval(pollRef.current);
+      return;
+    }
 
-    // In a real implementation, connect to the VNC server through websockify
-    // For now, show a placeholder
-    console.log('Connecting to VNC server for session:', sessionId);
+    // Start polling screenshots every 1.5s
+    drawScreenshot();
+    pollRef.current = window.setInterval(() => {
+      drawScreenshot();
+    }, 1500);
+
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+      pollRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   return (
@@ -28,21 +84,24 @@ export default function VNCViewer({ sessionId }: VNCViewerProps) {
       </div>
 
       <div className="vnc-container">
-        {/* In production, this would be NoVNC connecting to websockified VNC server */}
-        <div className="vnc-placeholder">
-          <p>🖥️ Desktop view will appear here</p>
-          <p>Connecting to VNC server...</p>
-          <p className="smaller">(Port 5900 - Run 'x11vnc' in the sandbox)</p>
-        </div>
-        <canvas 
-          ref={canvasRef} 
-          className="vnc-canvas"
-          style={{ display: 'none' }}
-        />
+        {!connected && (
+          <div className="vnc-placeholder">
+            <p>🖥️ Desktop view will appear here</p>
+            <p>Connecting to sandbox for session...</p>
+            <p className="smaller">(Polls /e2b/sessions/:id/screenshot every 1.5s)</p>
+          </div>
+        )}
+        <canvas ref={canvasRef} className="vnc-canvas" />
       </div>
 
       <div className="vnc-controls">
-        <button>📸 Screenshot</button>
+        <button
+          onClick={async () => {
+            await drawScreenshot();
+          }}
+        >
+          📸 Screenshot
+        </button>
         <button>⌨️ Send Keys</button>
         <button>🖱️ Toggle Trackpad</button>
       </div>
